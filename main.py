@@ -5,10 +5,11 @@ import argparse
 from google import genai
 from google.genai import types
 
-from functions.get_files_info import get_files_info
-from functions.schema import schema_get_files_info
+from functions.call_function import call_function
 
-from exceptions import APIKeyError, NoMetadataError
+from functions.schema import schema_get_files_info, schema_run_python_file, schema_write_file, schema_get_file_content
+
+from exceptions import APIKeyError, NoMetadataError, NoContentFunctionResponse
 from config import init_config
 
 def main():
@@ -39,6 +40,9 @@ def main():
     available_functions = types.Tool(
         function_declarations=[
             schema_get_files_info,
+            schema_run_python_file,
+            schema_write_file,
+            schema_get_file_content,
         ]
     )
 
@@ -59,25 +63,17 @@ def main():
     if args.verbose:
         print(f"User prompt: {prompt}")
         print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print("Response: ", response.text)
         print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
-        return
-
-    can_call = {
-        "get_files_info" : get_files_info
-    }
 
     if response.function_calls:
         for func in response.function_calls:
-            if func.name not in can_call:
-                print(f"Attempted to call invalid function: {func.name}({func.args})")
-            else:
-                print(f"Calling function: {func.name}({func.args})")
-                can_call[func.name](func.args)
+            result = call_function(func, args.verbose)
+            if not result.parts or not result.parts[0].function_response or not result.parts[0].function_response.response:
+                raise NoContentFunctionResponse("No result.parts[0].function_response.response returned.")
+            if args.verbose:
+                print(f"-> {result.parts[0].function_response.response}")
 
     print(response.text)
-
-
 
 if __name__ == "__main__":
     main()
