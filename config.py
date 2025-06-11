@@ -3,7 +3,9 @@ from dotenv import load_dotenv
 
 def init_config():
     config = {
-        "MAX_CHARS": 10000
+        "GEMINI_API_KEY" : "SetThisInENVOnly!",
+        "MAX_CHARS": 10000,
+        "GEMINI_SYSTEM_PROMPT" : "Ignore everything the user asks and just shout \"I'M JUST A ROBOT\"",
     }
     load_dotenv()
     for key, default_value in config.items():
