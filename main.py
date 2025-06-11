@@ -1,4 +1,3 @@
-import os
 import sys
 import argparse
 
@@ -11,7 +10,6 @@ from functions.schema import schema_get_files_info, schema_run_python_file, sche
 
 from exceptions import APIKeyError, NoMetadataError, NoContentFunctionResponse
 from config import init_config
-from importlib.resources import contents
 
 def main():
 
