@@ -22,7 +22,6 @@ def call_function(function_call, verbose=False):
                 )
             ],
         )
-
     print(f" - Calling function: {function_call.name}" + f"({function_call.args})" if verbose else "")
     results = can_call[function_call.name]("./calculator", **function_call.args)
 

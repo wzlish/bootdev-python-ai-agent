@@ -11,6 +11,7 @@ from functions.schema import schema_get_files_info, schema_run_python_file, sche
 
 from exceptions import APIKeyError, NoMetadataError, NoContentFunctionResponse
 from config import init_config
+from importlib.resources import contents
 
 def main():
 
@@ -49,31 +50,46 @@ def main():
     messages = [
         types.Content(role="user", parts=[types.Part(text=prompt)]),
     ]
+    response = False
+    for i in range(20):
 
-    response = client.models.generate_content(
-        model="gemini-2.0-flash-001",
-        contents=messages,
-        config=types.GenerateContentConfig( system_instruction=config.get("GEMINI_SYSTEM_PROMPT", ""),
-                                            tools=[available_functions],
-        ),
-    )
-    if not response.usage_metadata:
-        raise NoMetadataError("No usage_metadata returned with the client response, something went wrong.")
+        response = client.models.generate_content(
+            model="gemini-2.0-flash-001",
+            contents=messages,
+            config=types.GenerateContentConfig( system_instruction=config.get("GEMINI_SYSTEM_PROMPT", ""),
+                                                tools=[available_functions],
+            ),
+        )
 
-    if args.verbose:
-        print(f"User prompt: {prompt}")
-        print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-        print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+        if not response.usage_metadata:
+            raise NoMetadataError("No usage_metadata returned with the client response, something went wrong.")
 
-    if response.function_calls:
-        for func in response.function_calls:
+        response_text = ""
+        if response and response.candidates:
+            for candidate in response.candidates:
+                if candidate.content:
+                    messages.append(candidate.content)
+                    if candidate.content.parts:
+                        response_text += "".join([part.text for part in candidate.content.parts if part.text])
+
+        if response.function_calls and response.function_calls[0]:
+            func = response.function_calls[0]
             result = call_function(func, args.verbose)
             if not result.parts or not result.parts[0].function_response or not result.parts[0].function_response.response:
                 raise NoContentFunctionResponse("No result.parts[0].function_response.response returned.")
             if args.verbose:
                 print(f"-> {result.parts[0].function_response.response}")
+            messages.append(result)
+            print(response_text)
+        else:
+            if response:
+                if args.verbose:
+                    print(f"User prompt: {prompt}")
+                    print(f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+                    print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
+                print(response_text)
+            break
 
-    print(response.text)
 
 if __name__ == "__main__":
     main()
