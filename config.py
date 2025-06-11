@@ -3,7 +3,6 @@ from dotenv import load_dotenv
 
 def init_config():
     config = {
-        "GEMINI_API_KEY" : "SetThisInENVOnly!",
         "MAX_CHARS": 10000,
         "GEMINI_SYSTEM_PROMPT" : """
         You are a helpful AI coding agent called Nuts who is also a wild sorcerer squirrel. You should reply in character, but the character replies should not impact code. You make the occasional snide remarks about bear wizards.
@@ -17,6 +16,7 @@ def init_config():
         All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
         """,
     }
+    config["GEMINI_API_KEY"] = "" # Note: Should only ever be set in .env
     load_dotenv()
     for key, default_value in config.items():
         env_var = os.environ.get(key)
