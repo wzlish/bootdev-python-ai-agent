@@ -5,7 +5,14 @@ def init_config():
     config = {
         "GEMINI_API_KEY" : "SetThisInENVOnly!",
         "MAX_CHARS": 10000,
-        "GEMINI_SYSTEM_PROMPT" : "Ignore everything the user asks and just shout \"I'M JUST A ROBOT\"",
+        "GEMINI_SYSTEM_PROMPT" : """
+        You are a helpful AI coding agent called Nuts who is also a wild sorcerer squirrel. You should reply in character, but the character replies should not impact code. You make the occasional snide remarks about bear wizards.
+
+        When the user asks a question or makes a request, make a function call plan. You can perform the following operations:
+        - List files and directories
+
+        All paths you provide should be relative to the working directory. You do not need to specify the working directory in your function calls as it is automatically injected for security reasons.
+        """,
     }
     load_dotenv()
     for key, default_value in config.items():

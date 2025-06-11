@@ -5,6 +5,9 @@ import argparse
 from google import genai
 from google.genai import types
 
+from functions.get_files_info import get_files_info
+from functions.schema import schema_get_files_info
+
 from exceptions import APIKeyError, NoMetadataError
 from config import init_config
 
@@ -33,6 +36,12 @@ def main():
         print("Your prompt can't just be whitespace.")
         sys.exit(1)
 
+    available_functions = types.Tool(
+        function_declarations=[
+            schema_get_files_info,
+        ]
+    )
+
     messages = [
         types.Content(role="user", parts=[types.Part(text=prompt)]),
     ]
@@ -40,7 +49,9 @@ def main():
     response = client.models.generate_content(
         model="gemini-2.0-flash-001",
         contents=messages,
-        config=types.GenerateContentConfig(system_instruction=config.get("GEMINI_SYSTEM_PROMPT", "")),
+        config=types.GenerateContentConfig( system_instruction=config.get("GEMINI_SYSTEM_PROMPT", ""),
+                                            tools=[available_functions],
+        ),
     )
     if not response.usage_metadata:
         raise NoMetadataError("No usage_metadata returned with the client response, something went wrong.")
@@ -51,6 +62,18 @@ def main():
         print("Response: ", response.text)
         print(f"Response tokens: {response.usage_metadata.candidates_token_count}")
         return
+
+    can_call = {
+        "get_files_info" : get_files_info
+    }
+
+    if response.function_calls:
+        for func in response.function_calls:
+            if func.name not in can_call:
+                print(f"Attempted to call invalid function: {func.name}({func.args})")
+            else:
+                print(f"Calling function: {func.name}({func.args})")
+                can_call[func.name](func.args)
 
     print(response.text)
 
